@@ -29,6 +29,8 @@ from tensorflow import keras
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 
+from autodist import AutoDist
+
 from augmentor.color import VisualEffect
 from augmentor.misc import MiscEffect
 from model import efficientdet
@@ -310,71 +312,77 @@ def main(args=None):
 
     # K.set_session(get_session())
 
-    model, prediction_model = efficientdet(args.phi,
-                                           num_classes=num_classes,
-                                           num_anchors=num_anchors,
-                                           weighted_bifpn=args.weighted_bifpn,
-                                           freeze_bn=args.freeze_bn,
-                                           detect_quadrangle=args.detect_quadrangle
-                                           )
-    # load pretrained weights
-    if args.snapshot:
-        if args.snapshot == 'imagenet':
-            model_name = 'efficientnet-b{}'.format(args.phi)
-            file_name = '{}_weights_tf_dim_ordering_tf_kernels_autoaugment_notop.h5'.format(model_name)
-            file_hash = WEIGHTS_HASHES[model_name][1]
-            weights_path = keras.utils.get_file(file_name,
-                                                BASE_WEIGHTS_PATH + file_name,
-                                                cache_subdir='models',
-                                                file_hash=file_hash)
-            model.load_weights(weights_path, by_name=True)
-        else:
-            print('Loading model, this may take a second...')
-            model.load_weights(args.snapshot, by_name=True)
+    # Autodist setup
+    ad = AutoDist(resource_spec_file="resource_spec.yml")
 
-    # freeze backbone layers
-    if args.freeze_backbone:
-        # 227, 329, 329, 374, 464, 566, 656
-        for i in range(1, [227, 329, 329, 374, 464, 566, 656][args.phi]):
-            model.layers[i].trainable = False
+    with tf.Graph().as_default(), ad.scope():
+        K.set_session(ad.create_distributed_session())
 
-    if args.gpu and len(args.gpu.split(',')) > 1:
-        model = keras.utils.multi_gpu_model(model, gpus=list(map(int, args.gpu.split(','))))
+        model, prediction_model = efficientdet(args.phi,
+                                               num_classes=num_classes,
+                                               num_anchors=num_anchors,
+                                               weighted_bifpn=args.weighted_bifpn,
+                                               freeze_bn=args.freeze_bn,
+                                               detect_quadrangle=args.detect_quadrangle
+                                               )
+        # load pretrained weights
+        if args.snapshot:
+            if args.snapshot == 'imagenet':
+                model_name = 'efficientnet-b{}'.format(args.phi)
+                file_name = '{}_weights_tf_dim_ordering_tf_kernels_autoaugment_notop.h5'.format(model_name)
+                file_hash = WEIGHTS_HASHES[model_name][1]
+                weights_path = keras.utils.get_file(file_name,
+                                                    BASE_WEIGHTS_PATH + file_name,
+                                                    cache_subdir='models',
+                                                    file_hash=file_hash)
+                model.load_weights(weights_path, by_name=True)
+            else:
+                print('Loading model, this may take a second...')
+                model.load_weights(args.snapshot, by_name=True)
 
-    # compile model
-    model.compile(optimizer=Adam(lr=1e-3), loss={
-        'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
-        'classification': focal()
-    }, )
+        # freeze backbone layers
+        if args.freeze_backbone:
+            # 227, 329, 329, 374, 464, 566, 656
+            for i in range(1, [227, 329, 329, 374, 464, 566, 656][args.phi]):
+                model.layers[i].trainable = False
 
-    # print(model.summary())
+        if args.gpu and len(args.gpu.split(',')) > 1:
+            model = keras.utils.multi_gpu_model(model, gpus=list(map(int, args.gpu.split(','))))
 
-    # create the callbacks
-    callbacks = create_callbacks(
-        model,
-        prediction_model,
-        validation_generator,
-        args,
-    )
+        # compile model
+        model.compile(optimizer=Adam(lr=1e-3), loss={
+            'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
+            'classification': focal()
+        }, )
 
-    if not args.compute_val_loss:
-        validation_generator = None
-    elif args.compute_val_loss and validation_generator is None:
-        raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
+        # print(model.summary())
 
-    # start training
-    return model.fit_generator(
-        generator=train_generator,
-        steps_per_epoch=args.steps,
-        initial_epoch=0,
-        epochs=args.epochs,
-        verbose=1,
-        callbacks=callbacks,
-        workers=args.workers,
-        use_multiprocessing=args.multiprocessing,
-        max_queue_size=args.max_queue_size,
-        validation_data=validation_generator
-    )
+        # create the callbacks
+        callbacks = create_callbacks(
+            model,
+            prediction_model,
+            validation_generator,
+            args,
+        )
+
+        if not args.compute_val_loss:
+            validation_generator = None
+        elif args.compute_val_loss and validation_generator is None:
+            raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
+
+        # start training
+        return model.fit_generator(
+            generator=train_generator,
+            steps_per_epoch=args.steps,
+            initial_epoch=0,
+            epochs=args.epochs,
+            verbose=1,
+            callbacks=callbacks,
+            workers=args.workers,
+            use_multiprocessing=args.multiprocessing,
+            max_queue_size=args.max_queue_size,
+            validation_data=validation_generator
+        )
 
 
 if __name__ == '__main__':
