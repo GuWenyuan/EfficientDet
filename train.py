@@ -296,8 +296,6 @@ def parse_args(args):
 
 
 def main(args=None):
-    # Disable eager mode.
-    tf.compat.v1.disable_eager_execution()
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -360,8 +358,6 @@ def main(args=None):
             'classification': focal()
         }, )
 
-        tf.compat.v1.keras.backend.set_session(ad.create_distributed_session())
-
         # print(model.summary())
 
         # create the callbacks
@@ -376,6 +372,8 @@ def main(args=None):
             validation_generator = None
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
+
+        tf.compat.v1.keras.backend.set_session(ad.create_distributed_session())
 
         # start training
         return model.fit_generator(
