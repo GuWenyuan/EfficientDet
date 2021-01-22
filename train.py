@@ -373,21 +373,22 @@ def main(args=None):
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
-        tf.compat.v1.keras.backend.set_session(ad.create_distributed_session())
+        sess = ad.create_distributed_session()
 
         # start training
-        return model.fit_generator(
-            generator=train_generator,
-            steps_per_epoch=args.steps,
-            initial_epoch=0,
-            epochs=args.epochs,
-            verbose=1,
-            callbacks=callbacks,
-            workers=args.workers,
-            use_multiprocessing=args.multiprocessing,
-            max_queue_size=args.max_queue_size,
-            validation_data=validation_generator
-        )
+        with sess.as_default():
+            return model.fit_generator(
+                generator=train_generator,
+                steps_per_epoch=args.steps,
+                initial_epoch=0,
+                epochs=args.epochs,
+                verbose=1,
+                callbacks=callbacks,
+                workers=args.workers,
+                use_multiprocessing=args.multiprocessing,
+                max_queue_size=args.max_queue_size,
+                validation_data=validation_generator
+            )
 
 
 if __name__ == '__main__':
