@@ -26,8 +26,7 @@ import tensorflow as tf
 # from keras.optimizers import Adam, SGD
 
 from tensorflow import keras
-# import tensorflow.keras.backend as K
-from tensorflow.python.keras import backend as K
+import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 
 from autodist import AutoDist
@@ -374,20 +373,23 @@ def main(args=None):
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
-        with ad.create_distributed_session() as sess:
-            # start training
-            return sess.run(model.fit_generator(
-                generator=train_generator,
-                steps_per_epoch=args.steps,
-                initial_epoch=0,
-                epochs=args.epochs,
-                verbose=1,
-                callbacks=callbacks,
-                workers=args.workers,
-                use_multiprocessing=args.multiprocessing,
-                max_queue_size=args.max_queue_size,
-                validation_data=validation_generator
-            ))
+        # sess = ad.create_distributed_session()
+        sess = tf.compat.v1.Session()
+        tf.compat.v1.keras.backend.set_session(sess)
+
+        # start training
+        return model.fit_generator(
+            generator=train_generator,
+            steps_per_epoch=args.steps,
+            initial_epoch=0,
+            epochs=args.epochs,
+            verbose=1,
+            callbacks=callbacks,
+            workers=args.workers,
+            use_multiprocessing=args.multiprocessing,
+            max_queue_size=args.max_queue_size,
+            validation_data=validation_generator
+        )
 
 
 if __name__ == '__main__':
