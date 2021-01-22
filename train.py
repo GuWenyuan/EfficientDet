@@ -303,11 +303,6 @@ def main(args=None):
         args = sys.argv[1:]
     args = parse_args(args)
 
-    # create the generators
-    train_generator, validation_generator = create_generators(args)
-
-    num_classes = train_generator.num_classes()
-    num_anchors = train_generator.num_anchors
 
     # optionally choose specific GPU
     if args.gpu:
@@ -320,6 +315,12 @@ def main(args=None):
 
     with tf.Graph().as_default(), ad.scope():
         # K.set_session(ad.create_distributed_session())
+
+        # create the generators
+        train_generator, validation_generator = create_generators(args)
+
+        num_classes = train_generator.num_classes()
+        num_anchors = train_generator.num_anchors
 
         model, prediction_model = efficientdet(args.phi,
                                                num_classes=num_classes,
