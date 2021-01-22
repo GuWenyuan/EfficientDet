@@ -353,6 +353,9 @@ def main(args=None):
         if args.gpu and len(args.gpu.split(',')) > 1:
             model = keras.utils.multi_gpu_model(model, gpus=list(map(int, args.gpu.split(','))))
 
+        sess = ad.create_distributed_session()
+        K.set_session(sess)
+
         # compile model
         model.compile(optimizer=Adam(lr=1e-3), loss={
             'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
@@ -374,23 +377,20 @@ def main(args=None):
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
-        sess = ad.create_distributed_session()
-        K.set_session(sess)
 
         # start training
-        with sess.as_default():
-            return model.fit_generator(
-                generator=train_generator,
-                steps_per_epoch=args.steps,
-                initial_epoch=0,
-                epochs=args.epochs,
-                verbose=1,
-                callbacks=callbacks,
-                workers=args.workers,
-                use_multiprocessing=args.multiprocessing,
-                max_queue_size=args.max_queue_size,
-                validation_data=validation_generator
-            )
+        return model.fit_generator(
+            generator=train_generator,
+            steps_per_epoch=args.steps,
+            initial_epoch=0,
+            epochs=args.epochs,
+            verbose=1,
+            callbacks=callbacks,
+            workers=args.workers,
+            use_multiprocessing=args.multiprocessing,
+            max_queue_size=args.max_queue_size,
+            validation_data=validation_generator
+        )
 
 
 if __name__ == '__main__':
