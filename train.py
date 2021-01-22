@@ -30,6 +30,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 
 from autodist import AutoDist
+# from autodist.strategy.auto_strategy import AutoStrategy
 
 from augmentor.color import VisualEffect
 from augmentor.misc import MiscEffect
@@ -316,7 +317,8 @@ def main(args=None):
     ad = AutoDist(resource_spec_file="resource_spec.yml")
 
     with tf.Graph().as_default(), ad.scope():
-        K.set_session(ad.create_distributed_session())
+        # K.set_session(ad.create_distributed_session())
+        tf.compat.v1.keras.backend.set_session(ad.create_distributed_session())
 
         model, prediction_model = efficientdet(args.phi,
                                                num_classes=num_classes,
