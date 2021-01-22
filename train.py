@@ -296,7 +296,7 @@ def parse_args(args):
 
 
 def main(args=None):
-    # Disable eager mode. 
+    # Disable eager mode.
     tf.compat.v1.disable_eager_execution()
     # parse arguments
     if args is None:
@@ -320,7 +320,6 @@ def main(args=None):
 
     with tf.Graph().as_default(), ad.scope():
         # K.set_session(ad.create_distributed_session())
-        tf.compat.v1.keras.backend.set_session(ad.create_distributed_session())
 
         model, prediction_model = efficientdet(args.phi,
                                                num_classes=num_classes,
@@ -358,6 +357,8 @@ def main(args=None):
             'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
             'classification': focal()
         }, )
+
+        tf.compat.v1.keras.backend.set_session(ad.create_distributed_session())
 
         # print(model.summary())
 
