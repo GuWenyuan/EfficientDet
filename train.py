@@ -296,6 +296,8 @@ def parse_args(args):
 
 
 def main(args=None):
+    # Disable eager mode. 
+    tf.compat.v1.disable_eager_execution()
     # parse arguments
     if args is None:
         args = sys.argv[1:]
