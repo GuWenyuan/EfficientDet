@@ -293,6 +293,7 @@ def parse_args(args):
 
 
 def main(args=None):
+    tf.compat.v1.disable_eager_execution()
     # parse arguments
     if args is None:
         args = sys.argv[1:]
