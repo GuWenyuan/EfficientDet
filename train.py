@@ -297,7 +297,7 @@ def parse_args(args):
 
 def main(args=None):
     # Disable eager mode.
-    tf.compat.v1.disable_eager_execution()
+    # tf.compat.v1.disable_eager_execution()
     # parse arguments
     if args is None:
         args = sys.argv[1:]
@@ -311,7 +311,8 @@ def main(args=None):
     # K.set_session(get_session())
 
     # Autodist setup
-    ad = AutoDist(resource_spec_file="/home/devops/EfficientDet/resource_spec.yml")
+    resource_spec_path = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
+    ad = AutoDist(resource_spec_file=resource_spec_path)
 
     with tf.Graph().as_default(), ad.scope():
         # K.set_session(ad.create_distributed_session())
