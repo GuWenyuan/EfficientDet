@@ -30,7 +30,7 @@ import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 
 from autodist import AutoDist
-# from autodist.strategy.auto_strategy import AutoStrategy
+from autodist.strategy.auto_strategy import AutoStrategy
 
 from augmentor.color import VisualEffect
 from augmentor.misc import MiscEffect
@@ -312,7 +312,7 @@ def main(args=None):
 
     # Autodist setup
     resource_spec_path = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
-    ad = AutoDist(resource_spec_file=resource_spec_path)
+    ad = AutoDist(resource_spec_path, AutoStrategy())
 
     with tf.Graph().as_default(), ad.scope():
         # K.set_session(ad.create_distributed_session())
