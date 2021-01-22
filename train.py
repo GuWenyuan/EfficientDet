@@ -26,7 +26,8 @@ import tensorflow as tf
 # from keras.optimizers import Adam, SGD
 
 from tensorflow import keras
-import tensorflow.keras.backend as K
+# import tensorflow.keras.backend as K
+from tensorflow.python.keras import backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 
 from autodist import AutoDist
@@ -374,6 +375,7 @@ def main(args=None):
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
         sess = ad.create_distributed_session()
+        K.set_session(sess)
 
         # start training
         with sess.as_default():
