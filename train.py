@@ -373,8 +373,7 @@ def main(args=None):
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
-        # sess = ad.create_distributed_session()
-        sess = tf.compat.v1.Session()
+        sess = ad.create_distributed_session()
         tf.compat.v1.keras.backend.set_session(sess)
 
         # start training
