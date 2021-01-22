@@ -316,7 +316,7 @@ def main(args=None):
     # K.set_session(get_session())
 
     # Autodist setup
-    ad = AutoDist(resource_spec_file="resource_spec.yml")
+    ad = AutoDist(resource_spec_file="/home/devops/EfficientDet/resource_spec.yml")
 
     with tf.Graph().as_default(), ad.scope():
         # K.set_session(ad.create_distributed_session())
