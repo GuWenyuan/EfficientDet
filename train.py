@@ -59,7 +59,15 @@ def get_session():
     return tf.Session(config=config)
 
 
-def create_callbacks(training_model, prediction_model, validation_generator, args):
+class SetAutoDistSession(keras.callbacks.Callback):
+    def __init__(self, ad):
+        self.sess = ad.create_distributed_session
+
+    def on_train_begin(self, logs=None):
+        tf.compat.v1.keras.backend.set_session(self.sess)
+
+
+def create_callbacks(training_model, prediction_model, validation_generator, args, autodist):
     """
     Creates the callbacks to use during training.
 
@@ -131,6 +139,10 @@ def create_callbacks(training_model, prediction_model, validation_generator, arg
     #     cooldown=0,
     #     min_lr=0
     # ))
+
+    callbacks.append(
+        SetAutoDistSession(autodist)
+    )
 
     return callbacks
 
@@ -366,6 +378,7 @@ def main(args=None):
             prediction_model,
             validation_generator,
             args,
+            ad
         )
 
         if not args.compute_val_loss:
@@ -373,8 +386,8 @@ def main(args=None):
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
-        sess = ad.create_distributed_session()
-        tf.compat.v1.keras.backend.set_session(sess)
+        # sess = ad.create_distributed_session()
+        # tf.compat.v1.keras.backend.set_session(sess)
 
         # start training
         return model.fit_generator(
