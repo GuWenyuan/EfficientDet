@@ -62,10 +62,12 @@ def get_session():
 class SetAutoDistSession(keras.callbacks.Callback):
     def __init__(self, autodist):
         self.autodist = autodist
+        self.sess = None
 
-    def on_train_begin(self, logs=None):
-        self.sess = self.autodist.create_distributed_session()
-        tf.compat.v1.keras.backend.set_session(self.sess)
+    def on_epoch_begin(self, logs=None):
+        if not self.sess:
+            self.sess = self.autodist.create_distributed_session()
+            tf.compat.v1.keras.backend.set_session(self.sess)
 
 
 def create_callbacks(training_model, prediction_model, validation_generator, args, autodist):
