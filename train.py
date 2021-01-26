@@ -146,9 +146,9 @@ def create_callbacks(training_model, prediction_model, validation_generator, arg
     #     min_lr=0
     # ))
 
-    callbacks.append(
-        SetAutoDistSession(autodist)
-    )
+    # callbacks.append(
+    #     SetAutoDistSession(autodist)
+    # )
 
     return callbacks
 
