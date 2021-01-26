@@ -25,7 +25,7 @@ import tensorflow as tf
 # import keras.backend as K
 # from keras.optimizers import Adam, SGD
 
-from tensorflow.python import keras
+from tensorflow import keras
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 
@@ -67,10 +67,10 @@ class SetAutoDistSession(keras.callbacks.Callback):
         self.autodist = autodist
         self.sess = None
 
-    def on_batch_begin(self, batch, logs=None):
+    def on_batch_begin(self, epoch, logs=None):
         if not self.sess:
             self.sess = self.autodist.create_distributed_session()
-            keras.backend.set_session(self.sess)
+            tf.compat.v1.keras.backend.set_session(self.sess)
 
 
 def create_callbacks(training_model, prediction_model, validation_generator, args, autodist):
@@ -146,9 +146,9 @@ def create_callbacks(training_model, prediction_model, validation_generator, arg
     #     min_lr=0
     # ))
 
-    callbacks.append(
-        SetAutoDistSession(autodist)
-    )
+    # callbacks.append(
+    #     SetAutoDistSession(autodist)
+    # )
 
     return callbacks
 
