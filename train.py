@@ -67,7 +67,7 @@ class SetAutoDistSession(keras.callbacks.Callback):
         self.autodist = autodist
         self.sess = None
 
-    def on_epoch_begin(self, epoch, logs=None):
+    def on_batch_begin(self, epoch, logs=None):
         if not self.sess:
             self.sess = self.autodist.create_distributed_session()
             tf.compat.v1.keras.backend.set_session(self.sess)
