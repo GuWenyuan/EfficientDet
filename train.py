@@ -60,11 +60,14 @@ def get_session():
 
 
 class SetAutoDistSession(keras.callbacks.Callback):
+    """
+    For Tensorflow 2.1.0 only. Newer version (like 2.4.1) should change signature accordingly
+    """
     def __init__(self, autodist):
         self.autodist = autodist
         self.sess = None
 
-    def on_epoch_begin(self, logs=None):
+    def on_epoch_begin(self, epoch, logs=None):
         if not self.sess:
             self.sess = self.autodist.create_distributed_session()
             tf.compat.v1.keras.backend.set_session(self.sess)
