@@ -33,7 +33,10 @@ from tensorflow.python.util import nest
 from tensorflow import keras
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
-from tensorflow.python.keras.engine.training_generator import convert_to_generator_like
+from tensorflow.python.keras.engine.training_generator import (
+    convert_to_generator_like,
+    _make_enqueued_generator
+)
 
 from autodist import AutoDist
 # from autodist.strategy.auto_strategy import AutoStrategy
@@ -128,6 +131,12 @@ class AutoDistModelWrapper(keras.models.Model):
             epochs,
             shuffle
         )
+        generator, enqueuer = _make_enqueued_generator(
+            generator,
+            workers=workers,
+            use_multiprocessing=use_multiprocessing,
+            max_queue_size=max_queue_size,
+            shuffle=shuffle)
         sess = tf.compat.v1.keras.backend.get_session()
         for epoch in range(epochs):
             if steps_per_epoch is None:
