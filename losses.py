@@ -31,7 +31,7 @@ def focal(alpha=0.25, gamma=1.5):
         A functor that computes the focal loss using the alpha and gamma.
     """
 
-    def _focal(y_true, y_pred):
+    def focal_loss(y_true, y_pred):
         """
         Compute the focal loss given the target tensor and the predicted tensor.
 
@@ -69,7 +69,7 @@ def focal(alpha=0.25, gamma=1.5):
 
         return keras.backend.sum(cls_loss) / normalizer
 
-    return _focal
+    return focal_loss
 
 
 def smooth_l1(sigma=3.0):
@@ -82,7 +82,7 @@ def smooth_l1(sigma=3.0):
     """
     sigma_squared = sigma ** 2
 
-    def _smooth_l1(y_true, y_pred):
+    def smooth_l1_loss(y_true, y_pred):
         """ Compute the smooth L1 loss of y_pred w.r.t. y_true.
         Args
             y_true: Tensor from the generator of shape (B, N, 5). The last value for each box is the state of the anchor (ignore, negative, positive).
@@ -116,7 +116,7 @@ def smooth_l1(sigma=3.0):
         normalizer = keras.backend.cast(normalizer, dtype=keras.backend.floatx())
         return keras.backend.sum(regression_loss) / normalizer
 
-    return _smooth_l1
+    return smooth_l1_loss
 
 
 def smooth_l1_quad(sigma=3.0):
@@ -131,7 +131,7 @@ def smooth_l1_quad(sigma=3.0):
     """
     sigma_squared = sigma ** 2
 
-    def _smooth_l1(y_true, y_pred):
+    def smooth_l1_loss(y_true, y_pred):
         """ Compute the smooth L1 loss of y_pred w.r.t. y_true.
 
         Args
@@ -184,4 +184,4 @@ def smooth_l1_quad(sigma=3.0):
 
         return box_regression_loss + alpha_regression_loss + 16 * ratio_regression_loss
 
-    return _smooth_l1
+    return smooth_l1_loss
