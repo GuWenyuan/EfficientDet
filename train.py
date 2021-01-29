@@ -18,7 +18,12 @@ import argparse
 from datetime import date
 import os
 import sys
+import logging
+import numpy as np
 import tensorflow as tf
+from tensorflow.python.framework import errors
+from tensorflow.python.util import nest
+
 
 # import keras
 # import keras.preprocessing.image
@@ -28,6 +33,7 @@ import tensorflow as tf
 from tensorflow import keras
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
+from tensorflow.python.keras.engine.training_generator import convert_to_generator_like
 
 from autodist import AutoDist
 # from autodist.strategy.auto_strategy import AutoStrategy
@@ -59,18 +65,94 @@ def get_session():
     return tf.Session(config=config)
 
 
-class SetAutoDistSession(keras.callbacks.Callback):
-    """
-    For Tensorflow 2.1.0 only. Newer version (like 2.4.1) should change signature accordingly
-    """
-    def __init__(self, autodist):
-        self.autodist = autodist
-        self.sess = None
+# class SetAutoDistSession(keras.callbacks.Callback):
+#     """
+#     For Tensorflow 2.1.0 only. Newer version (like 2.4.1) should change signature accordingly
+#     """
+#     def __init__(self, autodist):
+#         self.autodist = autodist
+#         self.sess = None
+#
+#     def on_batch_begin(self, epoch, logs=None):
+#         if not self.sess:
+#             self.sess = self.autodist.create_distributed_session()
+#             tf.compat.v1.keras.backend.set_session(self.sess)
 
-    def on_batch_begin(self, epoch, logs=None):
-        if not self.sess:
-            self.sess = self.autodist.create_distributed_session()
-            tf.compat.v1.keras.backend.set_session(self.sess)
+
+class AutoDistModelWrapper(keras.models.Model):
+    def __init__(self, keras_model):
+        super(AutoDistModelWrapper, self).__init__()
+        self.keras_model = keras_model
+
+    def _get_next_batch(self, generator):
+        """Retrieves the next batch of input data."""
+        try:
+            generator_output = next(generator)
+        except (StopIteration, errors.OutOfRangeError):
+            return None
+
+        if not isinstance(generator_output, tuple):
+            # Always wrap in a tuple.
+            generator_output = (generator_output,)
+        if len(generator_output) not in [1, 2, 3]:
+            raise ValueError(
+                'Output of generator should be a tuple of 1 or 2 or 3 '
+                'elements: (input,) or (input, target) or '
+                '(input, target, sample_weights). Received {}'.format(generator_output))
+        return generator_output
+
+    def fit(self,
+          x=None,
+          y=None,
+          batch_size=None,
+          epochs=1,
+          verbose=1,
+          callbacks=None,
+          validation_split=0.,
+          validation_data=None,
+          shuffle=True,
+          class_weight=None,
+          sample_weight=None,
+          initial_epoch=0,
+          steps_per_epoch=None,
+          validation_steps=None,
+          validation_freq=1,
+          max_queue_size=10,
+          workers=1,
+          use_multiprocessing=False,
+          **kwargs):
+        generator, steps_per_epoch = convert_to_generator_like(
+            x,
+            batch_size,
+            steps_per_epoch,
+            epochs,
+            shuffle
+        )
+        sess = tf.compat.v1.keras.backend.get_session()
+        for epoch in range(epochs):
+            if steps_per_epoch is None:
+                # Loop over dataset until `OutOfRangeError` is raised.
+                target_steps = np.inf
+            else:
+                # Loop over dataset for the specified number of steps.
+                target_steps = steps_per_epoch
+
+            step = 0
+            while step < target_steps:
+                batch_data = self._get_next_batch(generator)
+                batch_outs = self.keras_model(batch_data[0], training=True)
+                targets = batch_data[1]
+                optimizer = self.keras_model.optimizer
+                loss_fns = self.keras_model.loss_functions
+                loss = 0
+                for loss_fn, target, batch_out in zip(loss_fns, targets, batch_outs):
+                    loss += loss_fn(target, batch_out)
+                grads = tf.gradients(loss, self.keras_model.trainable_variables)
+                train_op = optimizer.apply_gradients(zip(grads,
+                                                         self.keras_model.trainable_variables))
+                iv, lossv, _ = sess.run([optimizer.iterations, loss, train_op])
+                if iv % 20 == 0:
+                    print("step: {}, train_loss: {:5f}".format(int(iv), lossv))
 
 
 def create_callbacks(training_model, prediction_model, validation_generator, args, autodist):
@@ -392,9 +474,14 @@ def main(args=None):
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
+        model = AutoDistModelWrapper(model)
+
+        # sess = ad.create_distributed_session()
+        # tf.compat.v1.keras.backend.set_session(sess)
+
         # start training
-        return model.fit_generator(
-            generator=train_generator,
+        return model.fit(
+            x=train_generator,
             steps_per_epoch=args.steps,
             initial_epoch=0,
             epochs=args.epochs,
