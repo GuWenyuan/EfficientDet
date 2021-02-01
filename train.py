@@ -38,7 +38,7 @@ from tensorflow.python.keras.engine.training_generator import (
     _make_enqueued_generator
 )
 
-from autodist import AutoDist
+# from autodist import AutoDist
 # from autodist.strategy.auto_strategy import AutoStrategy
 
 from augmentor.color import VisualEffect
@@ -419,9 +419,9 @@ def main(args=None):
 
     # Autodist setup
     resource_spec_path = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
-    ad = AutoDist(resource_spec_path)
+    # ad = AutoDist(resource_spec_path)
 
-    with tf.Graph().as_default(), ad.scope():
+    with tf.Graph().as_default():
         # K.set_session(ad.create_distributed_session())
 
         # create the generators
@@ -475,7 +475,7 @@ def main(args=None):
             prediction_model,
             validation_generator,
             args,
-            ad
+            None
         )
 
         if not args.compute_val_loss:
