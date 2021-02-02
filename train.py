@@ -83,9 +83,10 @@ def get_session():
 
 
 class AutoDistModelWrapper(keras.models.Model):
-    def __init__(self, keras_model):
+    def __init__(self, keras_model, session):
         super(AutoDistModelWrapper, self).__init__()
         self.keras_model = keras_model
+        self.sess = session
 
     def _get_next_batch(self, generator):
         """Retrieves the next batch of input data."""
@@ -137,7 +138,8 @@ class AutoDistModelWrapper(keras.models.Model):
             use_multiprocessing=use_multiprocessing,
             max_queue_size=max_queue_size,
             shuffle=shuffle)
-        sess = tf.compat.v1.keras.backend.get_session()
+        # sess = tf.compat.v1.keras.backend.get_session()
+        tf.compat.v1.keras.backend.set_session(self.sess)
         for epoch in range(epochs):
             if steps_per_epoch is None:
                 # Loop over dataset until `OutOfRangeError` is raised.
@@ -157,10 +159,10 @@ class AutoDistModelWrapper(keras.models.Model):
                     loss = 0
                     for loss_fn, target, batch_out in zip(loss_fns, targets, batch_outs):
                         loss += loss_fn(target, batch_out)
-                grads = tape.gradients(loss, self.keras_model.trainable_variables)
+                grads = tape.gradient(loss, self.keras_model.trainable_variables)
                 train_op = optimizer.apply_gradients(zip(grads,
                                                          self.keras_model.trainable_variables))
-                iv, lossv, _ = sess.run([optimizer.iterations, loss, train_op])
+                iv, lossv, _ = self.sess.run([optimizer.iterations, loss, train_op])
                 if iv % 20 == 0:
                     print("step: {}, train_loss: {:5f}".format(int(iv), lossv))
 
@@ -423,6 +425,7 @@ def main(args=None):
     # ad = AutoDist(resource_spec_path)
 
     with tf.Graph().as_default():
+        sess = tf.compat.v1.Session()
         # K.set_session(ad.create_distributed_session())
 
         # create the generators
@@ -484,7 +487,7 @@ def main(args=None):
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
-        model = AutoDistModelWrapper(model)
+        model = AutoDistModelWrapper(model, sess)
 
         # sess = ad.create_distributed_session()
         # tf.compat.v1.keras.backend.set_session(sess)
