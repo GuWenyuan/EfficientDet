@@ -83,9 +83,11 @@ def get_session():
 
 
 class AutoDistModelWrapper(keras.models.Model):
-    def __init__(self, keras_model):
+    def __init__(self, keras_model, loss=None, optimizer=None):
         super(AutoDistModelWrapper, self).__init__()
         self.keras_model = keras_model
+        self.loss = loss
+        self.optimizer = optimizer
 
     def _get_next_batch(self, generator):
         """Retrieves the next batch of input data."""
@@ -137,19 +139,19 @@ class AutoDistModelWrapper(keras.models.Model):
             use_multiprocessing=use_multiprocessing,
             max_queue_size=max_queue_size,
             shuffle=shuffle)
-        sess = tf.compat.v1.keras.backend.get_session()
+        # sess = tf.compat.v1.keras.backend.get_session()
         batch_data = self._get_next_batch(generator)
         with tf.GradientTape() as tape:
             batch_outs = self.keras_model(batch_data[0], training=True)
             targets = batch_data[1]
-            optimizer = self.keras_model.optimizer
-            loss_fns = self.keras_model.loss_functions
             loss = 0
+            loss_fns = [self.loss['classification'], self.loss['regression']]
             for loss_fn, target, batch_out in zip(loss_fns, targets, batch_outs):
                 loss += loss_fn(target, batch_out)
         grads = tape.gradient(loss, self.keras_model.trainable_variables)
-        train_op = optimizer.apply_gradients(zip(grads,
+        train_op = self.optimizer.apply_gradients(zip(grads,
                                                  self.keras_model.trainable_variables))
+        sess = tf.Session()
         for epoch in range(epochs):
             if steps_per_epoch is None:
                 # Loop over dataset until `OutOfRangeError` is raised.
@@ -159,7 +161,7 @@ class AutoDistModelWrapper(keras.models.Model):
                 target_steps = steps_per_epoch
             step = 0
             while step < target_steps:
-                iv, lossv, _ = sess.run([optimizer.iterations, loss, train_op])
+                iv, lossv, _ = sess.run([self.optimizer.iterations, loss, train_op])
                 if iv % 20 == 0:
                     print("step: {}, train_loss: {:5f}".format(int(iv), lossv))
                 step += 1
@@ -465,10 +467,10 @@ def main(args=None):
             model = keras.utils.multi_gpu_model(model, gpus=list(map(int, args.gpu.split(','))))
 
         # compile model
-        model.compile(optimizer=Adam(lr=1e-3), loss={
-            'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
-            'classification': focal()
-        }, )
+        # model.compile(optimizer=Adam(lr=1e-3), loss={
+        #     'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
+        #     'classification': focal()
+        # }, )
 
         # print(model.summary())
 
@@ -486,7 +488,14 @@ def main(args=None):
         elif args.compute_val_loss and validation_generator is None:
             raise ValueError('When you have no validation data, you should not specify --compute-val-loss.')
 
-        model = AutoDistModelWrapper(model)
+        model = AutoDistModelWrapper(
+            model,
+            loss={
+            'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
+            'classification': focal()
+            },
+            optimizer=Adam(lr=1e-3)
+        )
 
         # sess = ad.create_distributed_session()
         # tf.compat.v1.keras.backend.set_session(sess)
