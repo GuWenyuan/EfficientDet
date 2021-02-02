@@ -149,14 +149,15 @@ class AutoDistModelWrapper(keras.models.Model):
             step = 0
             while step < target_steps:
                 batch_data = self._get_next_batch(generator)
-                batch_outs = self.keras_model(batch_data[0], training=True)
-                targets = batch_data[1]
-                optimizer = self.keras_model.optimizer
-                loss_fns = self.keras_model.loss_functions
-                loss = 0
-                for loss_fn, target, batch_out in zip(loss_fns, targets, batch_outs):
-                    loss += loss_fn(target, batch_out)
-                grads = tf.gradients(loss, self.keras_model.trainable_variables)
+                with tf.GradientTape() as tape:
+                    batch_outs = self.keras_model(batch_data[0], training=True)
+                    targets = batch_data[1]
+                    optimizer = self.keras_model.optimizer
+                    loss_fns = self.keras_model.loss_functions
+                    loss = 0
+                    for loss_fn, target, batch_out in zip(loss_fns, targets, batch_outs):
+                        loss += loss_fn(target, batch_out)
+                grads = tape.gradients(loss, self.keras_model.trainable_variables)
                 train_op = optimizer.apply_gradients(zip(grads,
                                                          self.keras_model.trainable_variables))
                 iv, lossv, _ = sess.run([optimizer.iterations, loss, train_op])
