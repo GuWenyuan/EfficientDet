@@ -30,7 +30,7 @@ from tensorflow.python.util import nest
 # import keras.backend as K
 # from keras.optimizers import Adam, SGD
 
-from tensorflow import keras
+from tensorflow.python import keras
 import tensorflow.keras.backend as K
 from tensorflow.keras.optimizers import Adam, SGD
 from tensorflow.python.keras.engine.training_generator import (
