@@ -39,7 +39,7 @@ from tensorflow.python.keras.engine.training_generator import (
 )
 
 from autodist import AutoDist
-from autodist.strategy.auto_strategy import AutoStrategy
+# from autodist.strategy.auto_strategy import AutoStrategy
 
 from augmentor.color import VisualEffect
 from augmentor.misc import MiscEffect
@@ -47,6 +47,13 @@ from model import efficientdet
 from losses import smooth_l1, focal, smooth_l1_quad
 from efficientnet import BASE_WEIGHTS_PATH, WEIGHTS_HASHES
 
+
+def print_func_addr(model=None):
+    print('*' * 50)
+    print(f'keras.backend._get_session: {keras.backend._get_session}')
+    if model is not None:
+        print(f'model.compile: {model.compile}')
+    print('=' * 50)
 
 def makedirs(path):
     # Intended behavior: try to create the directory,
@@ -498,6 +505,7 @@ def main(args=None):
         # tf.compat.v1.keras.backend.set_session(sess)
 
         # start training
+        print_func_addr(model)
         return model.fit(
             x=train_generator,
             steps_per_epoch=args.steps,
