@@ -84,7 +84,7 @@ class ClipBoxes(keras.layers.Layer):
     def call(self, inputs, **kwargs):
         image, boxes = inputs
         # shape = keras.backend.cast(keras.backend.shape(image), keras.backend.floatx())
-        shape = tf.shape(image, tf.dtypes.float32)
+        shape = tf.cast(tf.shape(image), tf.dtypes.float32)
         height = shape[1]
         width = shape[2]
         x1 = tf.clip_by_value(boxes[:, :, 0], 0, width - 1)
