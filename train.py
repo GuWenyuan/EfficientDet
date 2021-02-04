@@ -48,13 +48,6 @@ from losses import smooth_l1, focal, smooth_l1_quad
 from efficientnet import BASE_WEIGHTS_PATH, WEIGHTS_HASHES
 
 
-def print_func_addr(model=None):
-    print('*' * 50)
-    print(f'keras.backend._get_session: {keras.backend._get_session}')
-    if model is not None:
-        print(f'model.compile: {model.compile}')
-    print('=' * 50)
-
 def makedirs(path):
     # Intended behavior: try to create the directory,
     # pass if the directory exists already, fails otherwise.
@@ -440,6 +433,7 @@ def main(args=None):
         num_classes = train_generator.num_classes()
         num_anchors = train_generator.num_anchors
 
+        print('*' * 30 + ' Building model ' + '*' * 30)
         model, prediction_model = efficientdet(args.phi,
                                                num_classes=num_classes,
                                                num_anchors=num_anchors,
@@ -447,6 +441,7 @@ def main(args=None):
                                                freeze_bn=args.freeze_bn,
                                                detect_quadrangle=args.detect_quadrangle
                                                )
+        print('-' * 60 + '\n')
         # load pretrained weights
         if args.snapshot:
             if args.snapshot == 'imagenet':
@@ -472,10 +467,12 @@ def main(args=None):
             model = keras.utils.multi_gpu_model(model, gpus=list(map(int, args.gpu.split(','))))
 
         # compile model
+        print('*' * 30 + ' Compiling model ' + '*' * 30)
         model.compile(optimizer=Adam(lr=1e-3), loss={
             'regression': smooth_l1_quad() if args.detect_quadrangle else smooth_l1(),
             'classification': focal()
         }, )
+        print('-' * 60)
 
         # print(model.summary())
 
@@ -505,7 +502,7 @@ def main(args=None):
         # tf.compat.v1.keras.backend.set_session(sess)
 
         # start training
-        print_func_addr(model)
+        print('*' * 30 + ' Start training ' + '*' * 30)
         return model.fit(
             x=train_generator,
             steps_per_epoch=args.steps,
