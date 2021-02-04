@@ -441,6 +441,7 @@ def main(args=None):
                                                freeze_bn=args.freeze_bn,
                                                detect_quadrangle=args.detect_quadrangle
                                                )
+        tf.compat.v1.keras.backend.set_session(None)
         print('-' * 60 + '\n')
         # load pretrained weights
         if args.snapshot:
@@ -499,7 +500,7 @@ def main(args=None):
         # )
 
         # sess = ad.create_distributed_session()
-        # tf.compat.v1.keras.backend.set_session(sess)
+        tf.compat.v1.keras.backend.set_session(None)
 
         # start training
         print('*' * 30 + ' Start training ' + '*' * 30)
