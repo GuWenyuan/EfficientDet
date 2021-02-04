@@ -423,8 +423,8 @@ def main(args=None):
     # Autodist setup
     resource_spec_path = os.path.join(os.path.dirname(__file__), 'resource_spec.yml')
     ad = AutoDist(resource_spec_path)
-
-    with tf.Graph().as_default(), ad.scope():
+    g = tf.Graph()
+    with g.as_default(), ad.scope():
         # K.set_session(ad.create_distributed_session())
 
         # create the generators
@@ -501,6 +501,7 @@ def main(args=None):
 
         # sess = ad.create_distributed_session()
         tf.compat.v1.keras.backend.set_session(None)
+        g.finalize()
 
         # start training
         print('*' * 30 + ' Start training ' + '*' * 30)
