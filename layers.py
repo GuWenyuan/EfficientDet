@@ -92,7 +92,7 @@ class ClipBoxes(keras.layers.Layer):
         x2 = tf.clip_by_value(boxes[:, :, 2], 0, width - 1)
         y2 = tf.clip_by_value(boxes[:, :, 3], 0, height - 1)
 
-        return keras.backend.stack([x1, y1, x2, y2], axis=2)
+        return tf.stack([x1, y1, x2, y2], axis=2)
 
     def compute_output_shape(self, input_shape):
         return input_shape[1]
