@@ -501,7 +501,6 @@ def main(args=None):
 
         # sess = ad.create_distributed_session()
         tf.compat.v1.keras.backend.set_session(None)
-        g.finalize()
 
         # start training
         print('*' * 30 + ' Start training ' + '*' * 30)
