@@ -501,7 +501,7 @@ def main(args=None):
         # )
 
         # sess = ad.create_distributed_session()
-        tf.compat.v1.keras.backend.set_session(None)
+        # tf.compat.v1.keras.backend.set_session(None)
 
         # start training
         print('*' * 30 + ' Start training ' + '*' * 30)
@@ -511,7 +511,7 @@ def main(args=None):
             initial_epoch=0,
             epochs=args.epochs,
             verbose=1,
-            # callbacks=callbacks,
+            callbacks=callbacks,
             workers=args.workers,
             use_multiprocessing=args.multiprocessing,
             max_queue_size=args.max_queue_size,
