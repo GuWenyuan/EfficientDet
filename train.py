@@ -68,18 +68,18 @@ def get_session():
     return tf.Session(config=config)
 
 
-# class SetAutoDistSession(keras.callbacks.Callback):
-#     """
-#     For Tensorflow 2.1.0 only. Newer version (like 2.4.1) should change signature accordingly
-#     """
-#     def __init__(self, autodist):
-#         self.autodist = autodist
-#         self.sess = None
-#
-#     def on_batch_begin(self, epoch, logs=None):
-#         if not self.sess:
-#             self.sess = self.autodist.create_distributed_session()
-#             tf.compat.v1.keras.backend.set_session(self.sess)
+class SetAutoDistSession(keras.callbacks.Callback):
+    """
+    For Tensorflow 2.1.0 only. Newer version (like 2.4.1) should change signature accordingly
+    """
+    def __init__(self, autodist):
+        self.autodist = autodist
+        self.sess = None
+
+    def on_batch_begin(self, epoch, logs=None):
+        if not self.sess:
+            self.sess = self.autodist.create_distributed_session()
+            tf.compat.v1.keras.backend.set_session(self.sess)
 
 
 # class AutoDistModelWrapper(keras.models.Model):
@@ -240,9 +240,9 @@ def create_callbacks(training_model, prediction_model, validation_generator, arg
     #     min_lr=0
     # ))
 
-    # callbacks.append(
-    #     SetAutoDistSession(autodist)
-    # )
+    callbacks.append(
+        SetAutoDistSession(autodist)
+    )
 
     return callbacks
 
@@ -483,6 +483,7 @@ def main(args=None):
             prediction_model,
             validation_generator,
             args,
+            ad
         )
 
         if not args.compute_val_loss:
